@@ -1,8 +1,8 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { getPortalConfig, isPortal } from "@/lib/portals/config";
+import { getSubscriptionStatus } from "@/lib/billing";
+import { getPortalConfig, isOAuthPortal } from "@/lib/portals/config";
 
 const STATE_COOKIE_MAX_AGE_SECONDS = 600;
 
@@ -10,18 +10,32 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ provider: string }> },
 ) {
-  const { userId } = await auth();
+  const { userId, orgId, hasDashboardAccess } = await getSubscriptionStatus();
   if (!userId) {
     return NextResponse.redirect(new URL("/sign-in", req.url));
+  }
+  if (!orgId) {
+    return NextResponse.redirect(new URL("/onboarding", req.url));
+  }
+  if (!hasDashboardAccess) {
+    return NextResponse.redirect(new URL("/billing", req.url));
   }
 
   const { provider } = await params;
   const portalKey = provider.toUpperCase();
-  if (!isPortal(portalKey)) {
+  if (!isOAuthPortal(portalKey)) {
     return NextResponse.json({ error: "Unknown portal" }, { status: 404 });
   }
 
-  const config = getPortalConfig(portalKey);
+  let config: ReturnType<typeof getPortalConfig>;
+  try {
+    config = getPortalConfig(portalKey);
+  } catch {
+    return NextResponse.redirect(
+      new URL(`/dashboard/portal-links?portal_error=${provider}_not_configured`, req.url),
+    );
+  }
+
   const state = crypto.randomBytes(24).toString("hex");
 
   const cookieStore = await cookies();

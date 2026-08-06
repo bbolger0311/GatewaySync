@@ -13,6 +13,12 @@ datasource db {
 enum Portal {
   COUPA
   ARIBA
+  PROCURIFY
+  ZYCUS
+  AVIDXCHANGE
+  TIPALTI
+  RAMP
+  STAMPLI
 }
 
 enum SubmissionStatus {
@@ -21,9 +27,23 @@ enum SubmissionStatus {
   FAILED
 }
 
+// Mirrors a Clerk Organization. Organizations are the billing unit (the
+// $400/mo plan is org-scoped in Clerk) and, per Brett, also the sharing
+// unit — every member of a paying org sees the same portal connections,
+// purchase orders, and invoice history.
+model Organization {
+  id          String   @id @default(cuid())
+  clerkOrgId  String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  portalConnections  PortalConnection[]
+  invoiceSubmissions InvoiceSubmission[]
+}
+
 // Mirrors the signed-in Clerk user. Clerk owns credentials/verification;
-// this row just gives us a stable id to hang portal connections and
-// submissions off of.
+// this row exists purely for audit trails (who connected a portal, who
+// submitted an invoice) — it no longer owns any data itself.
 model User {
   id        String   @id @default(cuid())
   clerkId   String   @unique
@@ -31,16 +51,23 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  portalConnections  PortalConnection[]
-  invoiceSubmissions InvoiceSubmission[]
+  submittedInvoices InvoiceSubmission[]
 }
 
-// One row per user per linked portal (Coupa or Ariba). Tokens are
-// encrypted at rest with lib/encryption.ts before hitting the database.
+// One row per organization per linked portal — shared by every member of
+// the org. accessTokenCipher holds the OAuth access token for OAuth portals
+// (Coupa, Ariba, Procurify, Zycus, AvidXchange) or the API key for API-key
+// portals (Tipalti); either way it's encrypted at rest with
+// lib/encryption.ts before hitting the database. refreshTokenCipher,
+// tokenExpiresAt, and scope are OAuth-only and stay null for API-key portals.
 model PortalConnection {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Which member linked this connection, kept for display/audit only —
+  // access is governed by org membership, not this field.
+  connectedByUserId String?
 
   portal Portal
 
@@ -55,7 +82,7 @@ model PortalConnection {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([userId, portal])
+  @@unique([organizationId, portal])
 }
 
 // Cached snapshot of an open PO pulled from a portal's API, plus the
@@ -81,25 +108,31 @@ model PurchaseOrder {
   @@index([portal, externalPoNumber])
 }
 
-// A user's invoice submission attempt against a specific PO.
+// An invoice submission attempt against a specific PO, visible to the
+// whole organization — not just whoever submitted it.
 model InvoiceSubmission {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Which member submitted it, kept for display/audit only.
+  submittedByUserId String?
+  submittedByUser   User?   @relation(fields: [submittedByUserId], references: [id], onDelete: SetNull)
 
   purchaseOrderId String
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
   portal          Portal
-  submittedFields Json // values the user entered, keyed by the PO's requiredFields
+  submittedFields Json // values entered, keyed by the PO's requiredFields
   attachmentUrl   String? // stored PDF invoice, if attached
 
   status         SubmissionStatus @default(PENDING)
+  portalMessage  String? // human-readable confirmation/rejection note from the portal
   portalResponse Json? // raw confirmation/error payload from the portal
 
   submittedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([userId])
+  @@index([organizationId])
   @@index([status])
 }

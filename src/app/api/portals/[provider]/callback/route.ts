@@ -1,9 +1,10 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { getPortalConfig, isPortal } from "@/lib/portals/config";
+import { getPortalConfig, isOAuthPortal } from "@/lib/portals/config";
 import { encrypt } from "@/lib/encryption";
 import { prisma } from "@/lib/prisma";
+import { getOrCreateOrganization } from "@/lib/organizations";
 
 interface TokenResponse {
   access_token: string;
@@ -16,14 +17,17 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ provider: string }> },
 ) {
-  const { userId: clerkId } = await auth();
+  const { userId: clerkId, orgId } = await auth();
   if (!clerkId) {
     return NextResponse.redirect(new URL("/sign-in", req.url));
+  }
+  if (!orgId) {
+    return NextResponse.redirect(new URL("/onboarding", req.url));
   }
 
   const { provider } = await params;
   const portalKey = provider.toUpperCase();
-  if (!isPortal(portalKey)) {
+  if (!isOAuthPortal(portalKey)) {
     return NextResponse.json({ error: "Unknown portal" }, { status: 404 });
   }
 
@@ -39,11 +43,16 @@ export async function GET(
 
   if (oauthError) {
     return NextResponse.redirect(
-      new URL(`/dashboard?portal_error=${encodeURIComponent(oauthError)}`, req.url),
+      new URL(
+        `/dashboard/portal-links?portal_error=${encodeURIComponent(oauthError)}`,
+        req.url,
+      ),
     );
   }
   if (!code || !state || !expectedState || state !== expectedState) {
-    return NextResponse.redirect(new URL("/dashboard?portal_error=invalid_state", req.url));
+    return NextResponse.redirect(
+      new URL("/dashboard/portal-links?portal_error=invalid_state", req.url),
+    );
   }
 
   const config = getPortalConfig(portalKey);
@@ -63,7 +72,7 @@ export async function GET(
 
   if (!tokenRes.ok) {
     return NextResponse.redirect(
-      new URL("/dashboard?portal_error=token_exchange_failed", req.url),
+      new URL("/dashboard/portal-links?portal_error=token_exchange_failed", req.url),
     );
   }
 
@@ -72,7 +81,9 @@ export async function GET(
   const user = await currentUser();
   const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
   if (!email) {
-    return NextResponse.redirect(new URL("/dashboard?portal_error=missing_email", req.url));
+    return NextResponse.redirect(
+      new URL("/dashboard/portal-links?portal_error=missing_email", req.url),
+    );
   }
 
   const dbUser = await prisma.user.upsert({
@@ -81,20 +92,24 @@ export async function GET(
     create: { clerkId, email },
   });
 
+  const dbOrg = await getOrCreateOrganization(orgId);
+
   const tokenExpiresAt = tokens.expires_in
     ? new Date(Date.now() + tokens.expires_in * 1000)
     : null;
 
   await prisma.portalConnection.upsert({
-    where: { userId_portal: { userId: dbUser.id, portal: portalKey } },
+    where: { organizationId_portal: { organizationId: dbOrg.id, portal: portalKey } },
     update: {
+      connectedByUserId: dbUser.id,
       accessTokenCipher: encrypt(tokens.access_token),
       refreshTokenCipher: tokens.refresh_token ? encrypt(tokens.refresh_token) : null,
       tokenExpiresAt,
       scope: tokens.scope ?? null,
     },
     create: {
-      userId: dbUser.id,
+      organizationId: dbOrg.id,
+      connectedByUserId: dbUser.id,
       portal: portalKey,
       accessTokenCipher: encrypt(tokens.access_token),
       refreshTokenCipher: tokens.refresh_token ? encrypt(tokens.refresh_token) : null,
@@ -103,5 +118,7 @@ export async function GET(
     },
   });
 
-  return NextResponse.redirect(new URL(`/dashboard?connected=${provider}`, req.url));
+  return NextResponse.redirect(
+    new URL(`/dashboard/portal-links?connected=${provider}`, req.url),
+  );
 }

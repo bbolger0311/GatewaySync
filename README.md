@@ -1,4 +1,4 @@
-# Portal Bridge
+# GatewaySync
 
 A consolidated invoice submission platform: users link their Coupa and Ariba
 accounts via OAuth, see every open purchase order from both in one table,

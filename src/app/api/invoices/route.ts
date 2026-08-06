@@ -2,7 +2,8 @@ import crypto from "crypto";
 import path from "path";
 import { mkdir, writeFile } from "fs/promises";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getSubscriptionStatus } from "@/lib/billing";
+import { getOrganizationByClerkId } from "@/lib/organizations";
 import { prisma } from "@/lib/prisma";
 import { submitInvoiceToPortal } from "@/lib/portals/sync";
 
@@ -12,14 +13,21 @@ import { submitInvoiceToPortal } from "@/lib/portals/sync";
 const UPLOAD_DIR = path.join(process.cwd(), "storage", "invoices");
 
 export async function POST(req: NextRequest) {
-  const { userId: clerkId } = await auth();
+  const { userId: clerkId, orgId, hasDashboardAccess } = await getSubscriptionStatus();
   if (!clerkId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (!orgId || !hasDashboardAccess) {
+    return NextResponse.json(
+      { error: "You need to create or join an organization to submit invoices." },
+      { status: 402 },
+    );
+  }
 
   const dbUser = await prisma.user.findUnique({ where: { clerkId } });
-  if (!dbUser) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  const dbOrg = await getOrganizationByClerkId(orgId);
+  if (!dbUser || !dbOrg) {
+    return NextResponse.json({ error: "Purchase order not found" }, { status: 404 });
   }
 
   const formData = await req.formData();
@@ -32,7 +40,7 @@ export async function POST(req: NextRequest) {
   }
 
   const purchaseOrder = await prisma.purchaseOrder.findFirst({
-    where: { id: purchaseOrderId, portalConnection: { userId: dbUser.id } },
+    where: { id: purchaseOrderId, portalConnection: { organizationId: dbOrg.id } },
   });
   if (!purchaseOrder) {
     return NextResponse.json({ error: "Purchase order not found" }, { status: 404 });
@@ -49,7 +57,8 @@ export async function POST(req: NextRequest) {
 
   const submission = await prisma.invoiceSubmission.create({
     data: {
-      userId: dbUser.id,
+      organizationId: dbOrg.id,
+      submittedByUserId: dbUser.id,
       purchaseOrderId: purchaseOrder.id,
       portal: purchaseOrder.portal,
       submittedFields: JSON.parse(fieldsRaw),
@@ -58,15 +67,16 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const result = await submitInvoiceToPortal();
+  const result = await submitInvoiceToPortal(purchaseOrder.portal);
 
   const updated = await prisma.invoiceSubmission.update({
     where: { id: submission.id },
     data: {
       status: result.ok ? "CONFIRMED" : "FAILED",
+      portalMessage: result.message,
       portalResponse: result.response,
     },
   });
 
-  return NextResponse.json({ status: updated.status });
+  return NextResponse.json({ status: updated.status, message: updated.portalMessage });
 }

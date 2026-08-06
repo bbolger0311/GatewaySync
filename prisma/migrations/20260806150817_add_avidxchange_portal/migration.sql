@@ -1,0 +1,2 @@
+-- Add AVIDXCHANGE to the Portal enum
+ALTER TYPE "Portal" ADD VALUE 'AVIDXCHANGE';

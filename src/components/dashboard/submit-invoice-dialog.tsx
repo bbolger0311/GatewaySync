@@ -27,12 +27,14 @@ export function SubmitInvoiceDialog({
   const [values, setValues] = useState<Record<string, string>>({});
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<SubmitStatus>("idle");
+  const [resultMessage, setResultMessage] = useState<string | null>(null);
 
   const fields = (purchaseOrder?.requiredFields as Record<string, RequiredField>) ?? {};
 
   async function handleSubmit() {
     if (!purchaseOrder) return;
     setStatus("submitting");
+    setResultMessage(null);
 
     const formData = new FormData();
     formData.set("purchaseOrderId", purchaseOrder.id);
@@ -40,7 +42,18 @@ export function SubmitInvoiceDialog({
     if (file) formData.set("attachment", file);
 
     const res = await fetch("/api/invoices", { method: "POST", body: formData });
-    setStatus(res.ok ? "confirmed" : "failed");
+    const data = (await res.json().catch(() => null)) as {
+      error?: string;
+      message?: string;
+    } | null;
+
+    if (res.ok) {
+      setResultMessage(data?.message ?? null);
+      setStatus("confirmed");
+      return;
+    }
+    setResultMessage(data?.error ?? null);
+    setStatus("failed");
   }
 
   function handleOpenChange(open: boolean) {
@@ -48,6 +61,7 @@ export function SubmitInvoiceDialog({
       setValues({});
       setFile(null);
       setStatus("idle");
+      setResultMessage(null);
     }
     onOpenChange(open);
   }
@@ -88,10 +102,14 @@ export function SubmitInvoiceDialog({
           </div>
 
           {status === "confirmed" && (
-            <p className="text-sm text-green-600 dark:text-green-400">Submission confirmed.</p>
+            <p className="text-sm text-green-600 dark:text-green-400">
+              {resultMessage ?? "Submission confirmed."}
+            </p>
           )}
           {status === "failed" && (
-            <p className="text-sm text-destructive">Submission failed. Please try again.</p>
+            <p className="text-sm text-destructive">
+              {resultMessage ?? "Submission failed. Please try again."}
+            </p>
           )}
         </div>
 
