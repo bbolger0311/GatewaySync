@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Portal {
+  COUPA
+  ARIBA
+}
+
+enum SubmissionStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+// Mirrors the signed-in Clerk user. Clerk owns credentials/verification;
+// this row just gives us a stable id to hang portal connections and
+// submissions off of.
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  portalConnections  PortalConnection[]
+  invoiceSubmissions InvoiceSubmission[]
+}
+
+// One row per user per linked portal (Coupa or Ariba). Tokens are
+// encrypted at rest with lib/encryption.ts before hitting the database.
+model PortalConnection {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  portal Portal
+
+  externalAccountId  String? // account/user id on the Coupa or Ariba side
+  accessTokenCipher  String    @db.Text
+  refreshTokenCipher String?   @db.Text
+  tokenExpiresAt     DateTime?
+  scope              String?
+
+  purchaseOrders PurchaseOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, portal])
+}
+
+// Cached snapshot of an open PO pulled from a portal's API, plus the
+// dynamic fields required to submit an invoice against it. Refreshed
+// on demand; drives the consolidated PO table, filtering, and export.
+model PurchaseOrder {
+  id                 String           @id @default(cuid())
+  portalConnectionId String
+  portalConnection   PortalConnection @relation(fields: [portalConnectionId], references: [id], onDelete: Cascade)
+
+  portal           Portal
+  externalPoNumber String
+  vendorName       String?
+  description      String?
+  requiredFields   Json // field schema returned by the portal for invoice submission
+  rawData          Json // full PO payload as returned by the portal API
+
+  lastSyncedAt DateTime @default(now())
+
+  invoiceSubmissions InvoiceSubmission[]
+
+  @@unique([portalConnectionId, externalPoNumber])
+  @@index([portal, externalPoNumber])
+}
+
+// A user's invoice submission attempt against a specific PO.
+model InvoiceSubmission {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  portal          Portal
+  submittedFields Json // values the user entered, keyed by the PO's requiredFields
+  attachmentUrl   String? // stored PDF invoice, if attached
+
+  status         SubmissionStatus @default(PENDING)
+  portalResponse Json? // raw confirmation/error payload from the portal
+
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
