@@ -26,7 +26,7 @@ These aren't obvious from the code alone; they're product decisions made over th
 
 6. **Never fake success silently.** The actual portal API integration (`src/lib/portals/sync.ts`) is stubbed — no live tenant credentials/API calls exist yet for pulling POs or submitting invoices, regardless of how well OAuth/connection is wired up. Rather than silently pretend every submission succeeded, the stub returns an explicit, visible message: *"Stub confirmation — no live \[Portal] API call was made."* This flows into `portalMessage` on every submission and is shown in the UI.
 
-7. **Per-page auth checks, not centralized middleware.** Every protected page/route calls `getSubscriptionStatus()` itself and redirects/errors inline, rather than relying on middleware to gate access. New protected routes should follow this same pattern.
+7. **Auth is checked in two places that don't fully agree — worth resolving, not a pattern to copy blindly.** `src/proxy.ts` (Next.js 16's renamed `middleware.ts`) runs `clerkMiddleware` + `auth.protect()` for `/dashboard(.*)` and `/api/portals(.*)` only, which redirects unauthenticated visitors to Clerk's generic hosted portal (`accounts.<domain>`). Every *other* protected page (`/billing`, `/onboarding`) has no middleware coverage and instead calls `getSubscriptionStatus()` itself, redirecting to the app's own branded `/sign-in`. Net effect: which sign-in screen a visitor sees depends on which protected URL they hit first — confirmed via live testing on Gateway-Sync.com. Both block access correctly (not a security bug), but it's an inconsistent UX worth fixing: either extend the middleware matcher to cover every protected route, or drop it and rely solely on the existing per-page checks (which already exist everywhere and are the wider-covering pattern). Don't assume one pattern is "the" pattern until this is resolved.
 
 ## What's built and working today
 
@@ -47,6 +47,7 @@ These aren't obvious from the code alone; they're product decisions made over th
 - **`src/lib/portals/sync.ts`** — `syncPurchaseOrders()` and `submitInvoiceToPortal()` are stubs regardless of portal or connection status. No live API calls happen for any portal yet. This is the integration point to fill in once a real org has real credentials connected.
 - **No token refresh logic** — `PortalConnection.refreshTokenCipher`/`tokenExpiresAt` are stored but nothing automatically refreshes an expiring access token. Once one expires, the org has to click "Reconnect."
 - **Hiding the Free plan from `<PricingTable />`** needs a manual Clerk Dashboard toggle (Subscription Plans → Free → "Publicly available" off). No confirmed working Backend API endpoint was found for this (a direct PATCH attempt 404'd; Clerk Billing is still Beta).
+- **Dark mode is unreachable** — `globals.css` has a complete `.dark { ... }` theme (Tailwind v4 class-based variant, `@custom-variant dark (&:is(.dark *))`), but nothing ever applies the `.dark` class — no toggle UI, no `next-themes`, no `prefers-color-scheme` wiring. Confirmed live: browser set to prefer dark still renders pure white. Needs either a theme toggle component or a script that mirrors system preference onto `<html>`.
 
 ## Architecture
 

@@ -1,12 +1,12 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
-const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/api/portals(.*)"]);
-
-export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
-    await auth.protect();
-  }
-});
+// clerkMiddleware() must run on every request for auth()/currentUser() to
+// work anywhere in the app (Clerk throws "clerkMiddleware() was not run"
+// otherwise) — but it does no route protection itself. Every protected
+// page/route already calls getSubscriptionStatus() and redirects/errors
+// inline (see PROJECT_STATE.md philosophy #7); that's the single source of
+// truth for what's protected, so nothing here duplicates or overrides it.
+export default clerkMiddleware();
 
 export const config = {
   matcher: [
