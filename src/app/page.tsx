@@ -25,6 +25,7 @@ const STEPS = [
 
 const PLAN_FEATURES = [
   "OAuth-linked procurement portal accounts",
+  "Integration Support Included",
   "Consolidated purchase order table",
   "Submit invoices without leaving the site",
   "Excel import and export",

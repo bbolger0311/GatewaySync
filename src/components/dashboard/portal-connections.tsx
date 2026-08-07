@@ -1,6 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsiblePanel,
+  CollapsibleChevron,
+} from "@/components/ui/collapsible";
 import { PORTAL_REGISTRY } from "@/lib/portals/registry";
 import { ApiKeyConnectForm } from "./api-key-connect-form";
 import { OAuthPortalCard } from "./oauth-portal-card";
@@ -21,37 +27,48 @@ export function PortalConnections({
         const oauthClient = oauthClients.find((c) => c.portal === portal);
         return (
           <Card key={key} className={!available ? "border-dashed" : undefined}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-base">{label}</CardTitle>
-              {available ? (
-                <Badge variant={connected ? "default" : "secondary"}>
-                  {connected ? "Connected" : "Not connected"}
-                </Badge>
-              ) : (
-                <Badge variant="outline">Coming soon</Badge>
-              )}
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <p className="text-sm text-muted-foreground">{description}</p>
-              {!available && (
-                <Button variant="outline" size="sm" className="w-fit" disabled>
-                  Connect {label}
-                </Button>
-              )}
-              {available && authType === "oauth" && (
-                <OAuthPortalCard
-                  portalKey={key}
-                  label={label}
-                  connected={connected}
-                  configured={!!oauthClient}
-                  existingClientId={oauthClient?.clientId ?? null}
-                  hint={OAUTH_FIELD_HINTS[portal as OAuthPortal]}
-                />
-              )}
-              {available && authType === "api_key" && (
-                <ApiKeyConnectForm portalKey={key} connected={connected} label={label} />
-              )}
-            </CardContent>
+            <Collapsible defaultOpen={false} className="flex flex-col gap-(--card-spacing)">
+              <CollapsibleTrigger
+                render={<CardHeader />}
+                nativeButton={false}
+                className="flex w-full cursor-pointer flex-row items-center justify-between space-y-0 text-left transition-colors hover:bg-muted/40"
+              >
+                <CardTitle className="text-base">{label}</CardTitle>
+                <div className="flex items-center gap-2">
+                  {available ? (
+                    <Badge variant={connected ? "default" : "secondary"}>
+                      {connected ? "Connected" : "Not connected"}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">Coming soon</Badge>
+                  )}
+                  <CollapsibleChevron />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsiblePanel>
+                <CardContent className="flex flex-col gap-3">
+                  <p className="text-sm text-muted-foreground">{description}</p>
+                  {!available && (
+                    <Button variant="outline" size="sm" className="w-fit" disabled>
+                      Connect {label}
+                    </Button>
+                  )}
+                  {available && authType === "oauth" && (
+                    <OAuthPortalCard
+                      portalKey={key}
+                      label={label}
+                      connected={connected}
+                      configured={!!oauthClient}
+                      existingClientId={oauthClient?.clientId ?? null}
+                      hint={OAUTH_FIELD_HINTS[portal as OAuthPortal]}
+                    />
+                  )}
+                  {available && authType === "api_key" && (
+                    <ApiKeyConnectForm portalKey={key} connected={connected} label={label} />
+                  )}
+                </CardContent>
+              </CollapsiblePanel>
+            </Collapsible>
           </Card>
         );
       })}
