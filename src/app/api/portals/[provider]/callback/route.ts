@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { getPortalConfig, isOAuthPortal } from "@/lib/portals/config";
+import { getOrgOAuthConfig, isOAuthPortal } from "@/lib/portals/config";
 import { encrypt } from "@/lib/encryption";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateOrganization } from "@/lib/organizations";
@@ -55,7 +55,13 @@ export async function GET(
     );
   }
 
-  const config = getPortalConfig(portalKey);
+  const dbOrg = await getOrCreateOrganization(orgId);
+  const config = await getOrgOAuthConfig(dbOrg.id, portalKey);
+  if (!config) {
+    return NextResponse.redirect(
+      new URL(`/dashboard/portal-links?portal_error=${provider}_not_configured`, req.url),
+    );
+  }
   const redirectUri = new URL(`/api/portals/${provider}/callback`, req.url).toString();
 
   const tokenRes = await fetch(config.tokenUrl, {
@@ -91,8 +97,6 @@ export async function GET(
     update: { email },
     create: { clerkId, email },
   });
-
-  const dbOrg = await getOrCreateOrganization(orgId);
 
   const tokenExpiresAt = tokens.expires_in
     ? new Date(Date.now() + tokens.expires_in * 1000)

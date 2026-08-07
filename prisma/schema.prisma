@@ -38,6 +38,7 @@ model Organization {
   updatedAt   DateTime @updatedAt
 
   portalConnections  PortalConnection[]
+  portalOAuthClients PortalOAuthClient[]
   invoiceSubmissions InvoiceSubmission[]
 }
 
@@ -78,6 +79,35 @@ model PortalConnection {
   scope              String?
 
   purchaseOrders PurchaseOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, portal])
+}
+
+// Each organization's own OAuth app registration for an OAuth portal — e.g.
+// Coupa is per-tenant, so a GatewaySync org whose buyer runs Coupa has to
+// register its own OAuth client in that buyer's Coupa instance and enter
+// the resulting authorize/token URLs and client id/secret here. There is no
+// platform-wide client: two different orgs connecting "Coupa" are very
+// likely talking to two entirely different Coupa tenants. This is looked up
+// before starting the /authorize redirect and again in /callback for the
+// token exchange. Tipalti has no equivalent row since its fixed base URLs
+// live in an env var (lib/portals/config.ts) and its only per-org secret is
+// the API key already stored directly on PortalConnection.
+model PortalOAuthClient {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  portal Portal
+
+  authorizeUrl       String
+  tokenUrl           String
+  clientId           String
+  clientSecretCipher String  @db.Text
+  scope              String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -11,7 +11,7 @@ import { SiteFooter } from "@/components/site-footer";
 function portalErrorMessage(code: string): string {
   if (code.endsWith("_not_configured")) {
     const portal = code.replace("_not_configured", "");
-    return `${portal[0].toUpperCase()}${portal.slice(1)} isn't set up yet — add its OAuth client id/secret to .env before connecting.`;
+    return `${portal[0].toUpperCase()}${portal.slice(1)} isn't set up yet — enter its OAuth app credentials below before connecting.`;
   }
   if (code === "invalid_state") {
     return "That connection attempt expired or was tampered with — try connecting again.";
@@ -40,6 +40,12 @@ export default async function PortalLinksPage({
   const dbOrg = await getOrganizationByClerkId(orgId);
   const portalConnections = dbOrg
     ? await prisma.portalConnection.findMany({ where: { organizationId: dbOrg.id } })
+    : [];
+  const oauthClients = dbOrg
+    ? await prisma.portalOAuthClient.findMany({
+        where: { organizationId: dbOrg.id },
+        select: { portal: true, clientId: true },
+      })
     : [];
 
   return (
@@ -71,7 +77,7 @@ export default async function PortalLinksPage({
           </p>
         )}
 
-        <PortalConnections connections={portalConnections} />
+        <PortalConnections connections={portalConnections} oauthClients={oauthClients} />
       </div>
       <SiteFooter />
     </div>

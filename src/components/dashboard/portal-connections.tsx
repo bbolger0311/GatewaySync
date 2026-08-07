@@ -3,17 +3,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PORTAL_REGISTRY } from "@/lib/portals/registry";
 import { ApiKeyConnectForm } from "./api-key-connect-form";
-import type { PortalConnection } from "@/generated/prisma/client";
+import { OAuthPortalCard } from "./oauth-portal-card";
+import { OAUTH_FIELD_HINTS, type OAuthPortal } from "@/lib/portals/config";
+import type { PortalConnection, PortalOAuthClient } from "@/generated/prisma/client";
 
 export function PortalConnections({
   connections,
+  oauthClients,
 }: {
   connections: Pick<PortalConnection, "portal">[];
+  oauthClients: Pick<PortalOAuthClient, "portal" | "clientId">[];
 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {PORTAL_REGISTRY.map(({ key, portal, label, description, available, authType }) => {
         const connected = available && connections.some((c) => c.portal === portal);
+        const oauthClient = oauthClients.find((c) => c.portal === portal);
         return (
           <Card key={key} className={!available ? "border-dashed" : undefined}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -34,15 +39,14 @@ export function PortalConnections({
                 </Button>
               )}
               {available && authType === "oauth" && (
-                <Button
-                  variant={connected ? "outline" : "default"}
-                  size="sm"
-                  className="w-fit"
-                  nativeButton={false}
-                  render={<a href={`/api/portals/${key}/authorize`} />}
-                >
-                  {connected ? "Reconnect" : "Connect"} {label}
-                </Button>
+                <OAuthPortalCard
+                  portalKey={key}
+                  label={label}
+                  connected={connected}
+                  configured={!!oauthClient}
+                  existingClientId={oauthClient?.clientId ?? null}
+                  hint={OAUTH_FIELD_HINTS[portal as OAuthPortal]}
+                />
               )}
               {available && authType === "api_key" && (
                 <ApiKeyConnectForm portalKey={key} connected={connected} label={label} />

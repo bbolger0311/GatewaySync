@@ -2,7 +2,8 @@ import crypto from "crypto";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { getSubscriptionStatus } from "@/lib/billing";
-import { getPortalConfig, isOAuthPortal } from "@/lib/portals/config";
+import { getOrgOAuthConfig, isOAuthPortal } from "@/lib/portals/config";
+import { getOrCreateOrganization } from "@/lib/organizations";
 
 const STATE_COOKIE_MAX_AGE_SECONDS = 600;
 
@@ -27,10 +28,9 @@ export async function GET(
     return NextResponse.json({ error: "Unknown portal" }, { status: 404 });
   }
 
-  let config: ReturnType<typeof getPortalConfig>;
-  try {
-    config = getPortalConfig(portalKey);
-  } catch {
+  const dbOrg = await getOrCreateOrganization(orgId);
+  const config = await getOrgOAuthConfig(dbOrg.id, portalKey);
+  if (!config) {
     return NextResponse.redirect(
       new URL(`/dashboard/portal-links?portal_error=${provider}_not_configured`, req.url),
     );
@@ -53,7 +53,7 @@ export async function GET(
   authorizeUrl.searchParams.set("response_type", "code");
   authorizeUrl.searchParams.set("client_id", config.clientId);
   authorizeUrl.searchParams.set("redirect_uri", redirectUri);
-  authorizeUrl.searchParams.set("scope", config.scope);
+  if (config.scope) authorizeUrl.searchParams.set("scope", config.scope);
   authorizeUrl.searchParams.set("state", state);
 
   return NextResponse.redirect(authorizeUrl);
