@@ -23,12 +23,21 @@ import {
 import { SubmitInvoiceDialog } from "./submit-invoice-dialog";
 import type { PurchaseOrder } from "@/generated/prisma/client";
 
+type LatestSubmission = { status: "PENDING" | "CONFIRMED" | "FAILED"; portalMessage: string | null };
 type Row = Pick<
   PurchaseOrder,
   "id" | "portal" | "externalPoNumber" | "vendorName" | "requiredFields"
->;
+> & {
+  invoiceSubmissions: LatestSubmission[];
+};
 
-type ColumnKey = "poNumber" | "source" | "vendor" | "requiredFields";
+const STATUS_VARIANT = {
+  CONFIRMED: "default",
+  FAILED: "destructive",
+  PENDING: "secondary",
+} as const;
+
+type ColumnKey = "poNumber" | "source" | "vendor" | "requiredFields" | "lastSubmission";
 type SortDirection = "asc" | "desc";
 
 interface ColumnDef {
@@ -47,6 +56,11 @@ const COLUMNS: ColumnDef[] = [
     label: "Required fields",
     numeric: true,
     value: (po) => Object.keys((po.requiredFields as Record<string, unknown>) ?? {}).length,
+  },
+  {
+    key: "lastSubmission",
+    label: "Last submission",
+    value: (po) => po.invoiceSubmissions[0]?.status ?? "Not submitted",
   },
 ];
 
@@ -248,34 +262,57 @@ export function PurchaseOrderTable({ purchaseOrders }: { purchaseOrders: Row[] }
               <TableHead>Source</TableHead>
               <TableHead>Vendor</TableHead>
               <TableHead>Required fields</TableHead>
+              <TableHead>Last submission</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   No purchase orders yet — connect a portal above to sync open POs.
                 </TableCell>
               </TableRow>
             )}
-            {rows.map((po) => (
-              <TableRow key={po.id}>
-                <TableCell className="font-mono text-sm">{po.externalPoNumber}</TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{po.portal}</Badge>
-                </TableCell>
-                <TableCell>{po.vendorName ?? "—"}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {Object.keys((po.requiredFields as Record<string, unknown>) ?? {}).length} fields
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm" onClick={() => setActiveOrder(po)}>
-                    Submit invoice
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {rows.map((po) => {
+              const latest = po.invoiceSubmissions[0];
+              return (
+                <TableRow key={po.id}>
+                  <TableCell className="font-mono text-sm">{po.externalPoNumber}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{po.portal}</Badge>
+                  </TableCell>
+                  <TableCell>{po.vendorName ?? "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {Object.keys((po.requiredFields as Record<string, unknown>) ?? {}).length} fields
+                  </TableCell>
+                  <TableCell>
+                    {latest ? (
+                      <div className="flex flex-col gap-1">
+                        <Badge variant={STATUS_VARIANT[latest.status]} className="w-fit">
+                          {latest.status}
+                        </Badge>
+                        {latest.portalMessage && (
+                          <span
+                            className="max-w-56 truncate text-xs text-muted-foreground"
+                            title={latest.portalMessage}
+                          >
+                            {latest.portalMessage}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Not submitted</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" onClick={() => setActiveOrder(po)}>
+                      Submit invoice
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

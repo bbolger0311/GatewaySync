@@ -19,6 +19,13 @@ export default async function DashboardPage() {
     ? await prisma.purchaseOrder.findMany({
         where: { portalConnection: { organizationId: dbOrg.id } },
         orderBy: { lastSyncedAt: "desc" },
+        include: {
+          invoiceSubmissions: {
+            orderBy: { submittedAt: "desc" },
+            take: 1,
+            select: { status: true, portalMessage: true },
+          },
+        },
       })
     : [];
 

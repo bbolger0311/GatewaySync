@@ -28,7 +28,7 @@ enum SubmissionStatus {
 }
 
 // Mirrors a Clerk Organization. Organizations are the billing unit (the
-// $400/mo plan is org-scoped in Clerk) and, per Brett, also the sharing
+// $999/mo plan is org-scoped in Clerk) and, per Brett, also the sharing
 // unit — every member of a paying org sees the same portal connections,
 // purchase orders, and invoice history.
 model Organization {

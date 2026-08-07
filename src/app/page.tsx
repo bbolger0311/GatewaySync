@@ -137,7 +137,7 @@ export default function Home() {
           <Card className="w-full max-w-sm text-left">
             <CardHeader className="gap-2">
               <div className="flex items-baseline gap-1.5">
-                <span className="text-4xl font-semibold tracking-tight">$400</span>
+                <span className="text-4xl font-semibold tracking-tight">$999</span>
                 <span className="text-muted-foreground">/mo per account</span>
               </div>
               <CardTitle className="text-sm font-normal text-muted-foreground">

@@ -110,34 +110,53 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const submission = await prisma.invoiceSubmission.create({
-      data: {
-        organizationId: dbOrg.id,
-        submittedByUserId: dbUser.id,
-        purchaseOrderId: purchaseOrder.id,
-        portal: purchaseOrder.portal,
-        submittedFields,
-        status: "PENDING",
-      },
-    });
+    // Each row's submission is isolated — an unexpected error here (e.g. a
+    // real portal API timing out, once sync.ts's stub is replaced with a
+    // live call) must only fail this one row, never abort the batch or the
+    // whole request.
+    let submissionId: string | null = null;
+    try {
+      const submission = await prisma.invoiceSubmission.create({
+        data: {
+          organizationId: dbOrg.id,
+          submittedByUserId: dbUser.id,
+          purchaseOrderId: purchaseOrder.id,
+          portal: purchaseOrder.portal,
+          submittedFields,
+          status: "PENDING",
+        },
+      });
+      submissionId = submission.id;
 
-    const result = await submitInvoiceToPortal(purchaseOrder.portal);
+      const result = await submitInvoiceToPortal(purchaseOrder.portal);
 
-    await prisma.invoiceSubmission.update({
-      where: { id: submission.id },
-      data: {
-        status: result.ok ? "CONFIRMED" : "FAILED",
-        portalMessage: result.message,
-        portalResponse: result.response,
-      },
-    });
+      await prisma.invoiceSubmission.update({
+        where: { id: submission.id },
+        data: {
+          status: result.ok ? "CONFIRMED" : "FAILED",
+          portalMessage: result.message,
+          portalResponse: result.response,
+        },
+      });
 
-    results.push({
-      row: r,
-      poNumber,
-      status: result.ok ? "confirmed" : "failed",
-      reason: result.message,
-    });
+      results.push({
+        row: r,
+        poNumber,
+        status: result.ok ? "confirmed" : "failed",
+        reason: result.message,
+      });
+    } catch (err) {
+      const reason = "Unexpected error submitting this PO — it was left open to retry.";
+      if (submissionId) {
+        await prisma.invoiceSubmission
+          .update({
+            where: { id: submissionId },
+            data: { status: "FAILED", portalMessage: reason, portalResponse: { error: String(err) } },
+          })
+          .catch(() => {});
+      }
+      results.push({ row: r, poNumber, status: "failed", reason });
+    }
   }
 
   return NextResponse.json({ results });
