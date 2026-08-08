@@ -16,6 +16,12 @@ export function SiteHeader() {
           </span>
         </Link>
         <div className="flex items-center gap-3">
+          <Button variant="ghost" nativeButton={false} render={<Link href="/how-it-works" />}>
+            How it works
+          </Button>
+          <Button variant="ghost" nativeButton={false} render={<Link href="/integrations" />}>
+            Integrations
+          </Button>
           <Show when="signed-out">
             <SignInButton mode="modal" forceRedirectUrl="/dashboard">
               <Button variant="ghost">Sign in</Button>

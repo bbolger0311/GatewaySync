@@ -112,25 +112,33 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5 sm:grid-cols-3">
-          {STEPS.map((step, i) => (
-            <Card
-              key={step.title}
-              className="transition-shadow duration-200 hover:shadow-md hover:shadow-foreground/5"
-            >
-              <CardHeader className="gap-3">
-                <span className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                  {i + 1}
-                </span>
-                <h3 className="font-heading text-base leading-snug font-medium">
-                  {step.title}
-                </h3>
-              </CardHeader>
-              <CardContent className="text-sm leading-relaxed text-muted-foreground">
-                {step.body}
-              </CardContent>
-            </Card>
-          ))}
+        <section className="flex flex-col items-center gap-6">
+          <div className="grid w-full gap-5 sm:grid-cols-3">
+            {STEPS.map((step, i) => (
+              <Card
+                key={step.title}
+                className="transition-shadow duration-200 hover:shadow-md hover:shadow-foreground/5"
+              >
+                <CardHeader className="gap-3">
+                  <span className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                    {i + 1}
+                  </span>
+                  <h3 className="font-heading text-base leading-snug font-medium">
+                    {step.title}
+                  </h3>
+                </CardHeader>
+                <CardContent className="text-sm leading-relaxed text-muted-foreground">
+                  {step.body}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Link
+            href="/how-it-works"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            See the full walkthrough →
+          </Link>
         </section>
 
         <section className="flex flex-col items-center gap-6 text-center">
@@ -149,11 +157,23 @@ export default function Home() {
 
           <div className="flex flex-wrap items-center justify-center gap-2.5">
             {PORTAL_REGISTRY.filter((p) => p.available).map((p) => (
-              <Badge key={p.key} variant="secondary" className="px-3 py-1.5 text-sm font-medium">
+              <Badge
+                key={p.key}
+                variant="secondary"
+                className="px-3 py-1.5 text-sm font-medium"
+                render={<Link href={`/integrations/${p.key}`} />}
+              >
                 {p.label}
               </Badge>
             ))}
           </div>
+
+          <Link
+            href="/integrations"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            View all integrations →
+          </Link>
         </section>
 
         <section className="flex flex-col items-center gap-8 text-center">
