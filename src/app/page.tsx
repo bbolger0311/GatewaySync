@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { Show, SignUpButton } from "@clerk/nextjs";
@@ -7,6 +8,31 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Badge } from "@/components/ui/badge";
 import { PORTAL_REGISTRY } from "@/lib/portals/registry";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
+
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "GatewaySync",
+  description:
+    "GatewaySync consolidates Coupa, Ariba, Procurify, Zycus, AvidXchange, Tipalti, Ramp, and Stampli into one dashboard — link your procurement portals once and submit invoices from a single place.",
+  applicationCategory: "BusinessApplication",
+  offers: {
+    "@type": "Offer",
+    price: "999",
+    priceCurrency: "USD",
+    priceSpecification: {
+      "@type": "UnitPriceSpecification",
+      price: "999",
+      priceCurrency: "USD",
+      billingIncrement: 1,
+      unitText: "MONTH",
+    },
+  },
+};
 
 const STEPS = [
   {
@@ -35,6 +61,10 @@ const PLAN_FEATURES = [
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+      />
       <SiteHeader />
 
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-24 px-6 py-24">
@@ -92,7 +122,9 @@ export default function Home() {
                 <span className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
                   {i + 1}
                 </span>
-                <CardTitle className="text-base">{step.title}</CardTitle>
+                <h3 className="font-heading text-base leading-snug font-medium">
+                  {step.title}
+                </h3>
               </CardHeader>
               <CardContent className="text-sm leading-relaxed text-muted-foreground">
                 {step.body}

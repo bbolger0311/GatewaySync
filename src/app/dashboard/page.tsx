@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -7,6 +8,10 @@ import { PurchaseOrderTable } from "@/components/dashboard/po-table";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function DashboardPage() {
   const { userId: clerkId, orgId, hasDashboardAccess } = await getSubscriptionStatus();

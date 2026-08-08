@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { CreateOrganization } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function OnboardingPage() {
   const { userId, orgId } = await auth();

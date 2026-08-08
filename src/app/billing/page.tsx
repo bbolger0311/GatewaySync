@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { PricingTable } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { getSubscriptionStatus } from "@/lib/billing";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function BillingPage() {
   const { userId, orgId, hasPaidPlan } = await getSubscriptionStatus();
