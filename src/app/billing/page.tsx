@@ -10,10 +10,10 @@ export const metadata: Metadata = {
 };
 
 export default async function BillingPage() {
-  const { userId, orgId, hasPaidPlan } = await getSubscriptionStatus();
+  const { userId, orgId, hasDashboardAccess } = await getSubscriptionStatus();
   if (!userId) redirect("/sign-in");
   if (!orgId) redirect("/onboarding");
-  if (hasPaidPlan) redirect("/dashboard");
+  if (hasDashboardAccess) redirect("/dashboard");
 
   return (
     <div className="flex flex-1 flex-col">
@@ -22,8 +22,7 @@ export default async function BillingPage() {
         <div className="flex flex-col items-center gap-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Upgrade GatewaySync</h1>
           <p className="text-sm text-muted-foreground">
-            Your organization already has dashboard access on the free plan &mdash;
-            upgrade to Standard for the full feature set.
+            Subscribe to the Standard plan to unlock the dashboard.
           </p>
         </div>
         <div className="w-full">
