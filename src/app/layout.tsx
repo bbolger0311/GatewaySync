@@ -72,6 +72,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           colorInputBackground: "var(--background)",
           colorNeutral: "var(--foreground)",
         },
+        elements: {
+          organizationSwitcherTrigger: { color: "var(--foreground)" },
+          organizationSwitcherTriggerIcon: { color: "var(--foreground)" },
+          organizationPreviewMainIdentifier: { color: "var(--foreground)" },
+          organizationPreviewSecondaryIdentifier: { color: "var(--muted-foreground)" },
+          userButtonTrigger: { color: "var(--foreground)" },
+          userButtonOuterIdentifier: { color: "var(--foreground)" },
+        },
       }}
     >
       <html
