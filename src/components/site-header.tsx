@@ -16,10 +16,20 @@ export function SiteHeader() {
           </span>
         </Link>
         <div className="flex flex-wrap items-center justify-end gap-3">
-          <Button variant="ghost" nativeButton={false} render={<Link href="/how-it-works" />}>
+          <Button
+            variant="ghost"
+            nativeButton={false}
+            render={<Link href="/how-it-works" />}
+            className="hidden sm:inline-flex"
+          >
             How it works
           </Button>
-          <Button variant="ghost" nativeButton={false} render={<Link href="/integrations" />}>
+          <Button
+            variant="ghost"
+            nativeButton={false}
+            render={<Link href="/integrations" />}
+            className="hidden sm:inline-flex"
+          >
             Integrations
           </Button>
           <Show when="signed-out">

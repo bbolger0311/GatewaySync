@@ -61,7 +61,19 @@ const THEME_SCRIPT = `(function(){try{var m=window.matchMedia('(prefers-color-sc
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        variables: {
+          colorPrimary: "var(--primary)",
+          colorText: "var(--foreground)",
+          colorTextSecondary: "var(--muted-foreground)",
+          colorBackground: "var(--background)",
+          colorInputText: "var(--foreground)",
+          colorInputBackground: "var(--background)",
+          colorNeutral: "var(--foreground)",
+        },
+      }}
+    >
       <html
         lang="en"
         suppressHydrationWarning
