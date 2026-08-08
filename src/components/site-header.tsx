@@ -17,7 +17,7 @@ export function SiteHeader() {
         </Link>
         <div className="flex items-center gap-3">
           <Show when="signed-out">
-            <SignInButton mode="modal">
+            <SignInButton mode="modal" forceRedirectUrl="/dashboard">
               <Button variant="ghost">Sign in</Button>
             </SignInButton>
             <SignUpButton mode="modal">
