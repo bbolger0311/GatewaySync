@@ -65,11 +65,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       appearance={{
         variables: {
           colorPrimary: "var(--primary)",
-          colorText: "var(--foreground)",
-          colorTextSecondary: "var(--muted-foreground)",
+          colorForeground: "var(--foreground)",
+          colorMutedForeground: "var(--muted-foreground)",
           colorBackground: "var(--background)",
-          colorInputText: "var(--foreground)",
-          colorInputBackground: "var(--background)",
+          colorInputForeground: "var(--foreground)",
+          colorInput: "var(--background)",
           colorNeutral: "var(--foreground)",
         },
         elements: {
@@ -79,6 +79,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           organizationPreviewSecondaryIdentifier: { color: "var(--muted-foreground)" },
           userButtonTrigger: { color: "var(--foreground)" },
           userButtonOuterIdentifier: { color: "var(--foreground)" },
+          // Collapse the org switcher to just its avatar on phones so the
+          // header doesn't run out of room; full name still shows once
+          // the trigger is tapped and the popover menu opens.
+          organizationPreviewTextContainer__organizationSwitcherTrigger: "max-sm:hidden",
         },
       }}
     >
