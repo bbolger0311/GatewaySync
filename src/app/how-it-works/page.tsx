@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ShieldCheck, Users, Eye, Layers } from "lucide-react";
+import { ShieldCheck, Users, Eye, TrendingUp } from "lucide-react";
 import { Show, SignUpButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { ContactForm } from "@/components/contact-form";
 
 export const metadata: Metadata = {
   title: "How It Works",
@@ -40,9 +41,9 @@ const PHILOSOPHY = [
     body: "OAuth is the default for every portal that supports it — GatewaySync's server only ever sees a one-time authorization code, never a password. Access and refresh tokens are encrypted at rest. Tipalti's API key is the one deliberate exception, because its Procurement API genuinely has no OAuth option.",
   },
   {
-    icon: Layers,
-    title: "Your own tenant, never a shared client",
-    body: "There's no platform-wide OAuth app for any portal. Every organization registers its own client against its own Coupa, Ariba, or other instance — because two GatewaySync customers are almost always talking to two entirely different buyer tenants, not the same one.",
+    icon: TrendingUp,
+    title: "Built for faster cash flow",
+    body: "Every invoice that sits unsubmitted because someone's waiting to log into the right portal is a day added to your AR aging. One consolidated dashboard means no portal-switching and no invoice quietly stuck in someone's queue — so your team submits sooner, and gets paid sooner.",
   },
   {
     icon: Users,
@@ -51,7 +52,7 @@ const PHILOSOPHY = [
   },
   {
     icon: Eye,
-    title: "Never fake success",
+    title: "Complete clarity",
     body: "If a submission doesn't go through cleanly, you see that immediately — GatewaySync surfaces the portal's actual response rather than silently marking it done. A purchase order stays visible and ready to retry until it genuinely succeeds.",
   },
 ];
@@ -151,6 +152,16 @@ export default function HowItWorksPage() {
           <Link href="/integrations" className="text-sm font-medium text-primary hover:underline">
             Browse all integrations →
           </Link>
+        </section>
+
+        <section className="flex flex-col items-center gap-6 text-center">
+          <div className="flex flex-col items-center gap-2">
+            <h2 className="text-2xl font-semibold tracking-tight">Still have questions?</h2>
+            <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+              Send us a note and we&rsquo;ll get back to you.
+            </p>
+          </div>
+          <ContactForm />
         </section>
       </main>
 

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Badge } from "@/components/ui/badge";
+import { ContactForm } from "@/components/contact-form";
 import { PORTAL_REGISTRY } from "@/lib/portals/registry";
 
 export const metadata: Metadata = {
@@ -186,45 +187,49 @@ export default function Home() {
             </h2>
           </div>
 
-          <Card className="w-full max-w-sm text-left">
-            <CardHeader className="gap-2">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-4xl font-semibold tracking-tight">$999</span>
-                <span className="text-muted-foreground">/mo per account</span>
-              </div>
-              <CardTitle className="text-sm font-normal text-muted-foreground">
-                Everything you need to run invoices through your customers&rsquo; portals
-                from one place.
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <ul className="flex flex-col gap-2.5 text-sm">
-                {PLAN_FEATURES.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <Check className="mt-0.5 size-4 shrink-0 text-primary" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <Show when="signed-out">
-                <SignUpButton mode="modal">
-                  <Button size="lg" className="w-full shadow-sm shadow-primary/20">
-                    Get started
+          <div className="grid w-full max-w-3xl gap-6 sm:grid-cols-2 sm:items-stretch">
+            <Card className="h-full w-full text-left">
+              <CardHeader className="gap-2">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-4xl font-semibold tracking-tight">$999</span>
+                  <span className="text-muted-foreground">/mo per account</span>
+                </div>
+                <CardTitle className="text-sm font-normal text-muted-foreground">
+                  Everything you need to run invoices through your customers&rsquo; portals
+                  from one place.
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-1 flex-col justify-between gap-4">
+                <ul className="flex flex-col gap-2.5 text-sm">
+                  {PLAN_FEATURES.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2">
+                      <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Show when="signed-out">
+                  <SignUpButton mode="modal">
+                    <Button size="lg" className="w-full shadow-sm shadow-primary/20">
+                      Get started
+                    </Button>
+                  </SignUpButton>
+                </Show>
+                <Show when="signed-in">
+                  <Button
+                    size="lg"
+                    nativeButton={false}
+                    render={<Link href="/onboarding" />}
+                    className="w-full shadow-sm shadow-primary/20"
+                  >
+                    Manage subscription
                   </Button>
-                </SignUpButton>
-              </Show>
-              <Show when="signed-in">
-                <Button
-                  size="lg"
-                  nativeButton={false}
-                  render={<Link href="/dashboard" />}
-                  className="w-full shadow-sm shadow-primary/20"
-                >
-                  Go to dashboard
-                </Button>
-              </Show>
-            </CardContent>
-          </Card>
+                </Show>
+              </CardContent>
+            </Card>
+
+            <ContactForm />
+          </div>
         </section>
       </main>
 
