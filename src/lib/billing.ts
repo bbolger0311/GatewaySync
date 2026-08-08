@@ -14,7 +14,11 @@ export const STANDARD_PLAN_KEY = "org:standard_plan";
 // name — names aren't unique or stable) gets dashboard access without a
 // paid plan, for testing. Matched by ID, not by plan, so it stays a single
 // hardcoded org rather than a rule that could accidentally widen later.
-const TEST_ORG_ID = "org_3HWQWLaXjWxfinNdMPiZIXZLZqD";
+// This ID must come from the PRODUCTION Clerk instance, not development —
+// the two are entirely separate data stores with different org IDs even
+// for identically-named orgs. (First attempt used the dev instance's ID
+// by mistake, since this repo's local .env holds test/dev Clerk keys.)
+const TEST_ORG_ID = "org_3HZIky8ypKRBDuifeLNr5kL7rvp";
 
 export async function getSubscriptionStatus() {
   const { userId, orgId, has } = await auth();
